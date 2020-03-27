@@ -16,6 +16,7 @@
     "rimraf": "^3.0.2",
     "rollup": "^2.2.0",
     "rollup-plugin-typescript2": "^0.26.0",
+    "serve": "^11.3.0",
     "ts-jest": "^25.2.1",
     "typescript": "^3.8.3"
   }

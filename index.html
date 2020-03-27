@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <script src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
+    <script src="./dist/index.js"></script>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+  </head>
+  <body>
+    <canvas id="demoCanvas" width="1000" height="1000"></canvas>
+  </body>
+
+  <script>
+        const stage = new createjs.Stage("demoCanvas");
+        
+        const graphicObj = new Map();
+
+        const insertGraphic = (id, position ) => {
+            const circle = new createjs.Shape();
+            circle.graphics.beginFill("DeepSkyBlue").drawCircle(0, 0, 5);
+            circle.x = position.x;
+            circle.y = position.y;
+            circle.radius = 5;
+            circle.id = id;
+            graphicObj.set(id, circle)
+            stage.addChild(circle);
+            stage.update();
+        };
+
+        const updateGraphic = (id, position) => {
+            const circle = graphicObj.get(id);
+            circle.x = position.x;
+            circle.y = position.y;
+            stage.update();
+        };
+
+        window.addEventListener("newBoid", (event) => {
+            const boid = event.detail;
+            console.log(boid)
+            insertGraphic(boid.id, boid.position)
+        });
+
+        window.addEventListener("update", (event) => {
+            const currentState = event.detail;
+            currentState.forEach( (boidState) => {
+                const boidGraphic = graphicObj.get(boidState.id);
+                boidGraphic.x = boidState.position.x;
+                boidGraphic.y = boidState.position.y;
+                stage.update();
+            });
+        })
+
+  </script>
+</html>
