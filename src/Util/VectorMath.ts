@@ -33,6 +33,12 @@ abstract class VectorMath {
     public static abs (p: Vector) : number {
         return Math.sqrt( Math.pow(p.x, 2) + Math.pow(p.y, 2) )
     }
+
+    public static angle (q: Vector, origin: Vector) {
+        const offset = VectorMath.subtract(q ,origin);
+
+        return Math.atan2(offset.y, offset.x )
+    };
 };
 
 export default VectorMath;

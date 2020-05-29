@@ -5,17 +5,29 @@
     <style>
         canvas {
             border: 1px solid black;
+            width: 90vw;
+            height: 90vh;
         }
     </style>
   </head>
   <body>
-    <canvas id="demoCanvas" width="1000" height="1000"></canvas>
+      <!-- <div>
+        <input type="range" id="framerate-slider" name="framerate" 
+               min="10" max="200" value="0" step="10">
+        <label for="framerate">Framerate: <span id="framerate_value">0</span></label>
+      </div> -->
+    <canvas id="demoCanvas" width="1500" height="1500"></canvas>
   </body>
 
   <script>
         const stage = new createjs.Stage("demoCanvas");
         
         const graphicObj = new Map();
+
+        // const handleFramerateInput = (event) => {
+        //     const newRate = event.target.value;
+        //     createjs.Ticker.interval = newRate;
+        // };
 
         const insertGraphic = (id, position ) => {
             const circle = new createjs.Shape();
@@ -36,21 +48,38 @@
             stage.update();
         };
 
-        window.addEventListener("newBoid", (event) => {
-            const boid = event.detail;
+        window.addBoid = (int = {position:undefined, velocity: undefined}) => {
+            const boid = boids.addBoid(int);
             console.log(boid)
             insertGraphic(boid.id, boid.position)
-        });
+        };
 
-        window.addEventListener("update", (event) => {
-            const currentState = event.detail;
+       const handleTick = (event) => {
+            const currentState = boids.updateState();
             currentState.forEach( (boidState) => {
                 const boidGraphic = graphicObj.get(boidState.id);
                 boidGraphic.x = boidState.position.x;
                 boidGraphic.y = boidState.position.y;
                 stage.update();
             });
-        })
+            // document.querySelector("span#framerate_value").textContent = Math.floor(createjs.Ticker.framerate);
+        };
+
+
+            createjs.Ticker.interval = 10;
+            // document.querySelector("input#framerate-slider").value = createjs.Ticker.interval;
+    
+            window.start = () => {
+                createjs.Ticker.addEventListener("tick", handleTick);
+            };
+    
+            window.stop = () => {
+                createjs.Ticker.removeEventListener("tick", handleTick);
+            };
+    
+            // document.querySelector("input#framerate-slider").addEventListener("change",handleFramerateInput);
+
+
 
   </script>
 </html>

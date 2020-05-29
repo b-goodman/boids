@@ -6,10 +6,11 @@ import Distance from "../Util/Distance";
 
 class Boid {
 
-    public static minRange: number = 10;
-    public static maxVelocity: number = 5;
+    public static flockRange: number = 100;
+    public static neighbouringRange: number = 100;
+    public static maxVelocity: number = 10;
 
-    public velocity: Vector = {x:1, y:-1};
+    public velocity: Vector = {x:5, y:5};
     public position: Vector = {x:0, y:0};
     public id: number = Counter.inc();
 
@@ -25,21 +26,14 @@ class Boid {
     }
 
     public step () {
-        // const v1: Vector = this.rule1();
-        // const v2: Vector = this.rule2();
-        // const v3: Vector = this.rule3();
-
-        // const offset = VectorMath.add(VectorMath.add(v1, v2), v3);
-
-        // this.velocity = VectorMath.add(this.velocity,offset);
-        // this.position = VectorMath.add(this.position, this.velocity);
-
-        // this.boundPosition();
-        // this.limitVelocity();
 
         this.rule1();
         this.rule2();
         this.rule3();
+        this.position.x += this.velocity.x * 0.1;
+        this.position.y += this.velocity.y * 0.1;
+        this.boundPosition();
+        // this.avoidBoundary();
 
         return {id:this.id, position:this.position}
     };
@@ -53,18 +47,28 @@ class Boid {
         const xMin = 0;
         const yMin = 0;
 
-        if (this.position.x < xMin - 10) {
-            this.position.x = xMax - 10;
-        } else if (this.position.x > xMax) {
-            this.position.x = xMin + 10;
+        if (this.position.x <= xMin) {
+            this.position.x = xMax;
+        } else if (this.position.x >= xMax) {
+            this.position.x = xMin;
         };
 
-        if (this.position.y < yMin - 10) {
-            this.position.y = yMax - 10;
-        } else if (this.position.y > yMax) {
-            this.position.y = yMin + 10;
+        if (this.position.y <= yMin) {
+            this.position.y = yMax;
+        } else if (this.position.y >= yMax) {
+            this.position.y = yMin;
         };
     };
+
+    // private avoidBoundary () {
+    //     const distanceFromCenter = Distance.euclidean(this.position, Flock.boundsRadius);
+
+    //     if (distanceFromCenter > Flock.boundsRadius.x) {
+    //         const bearing = VectorMath.angle(Flock.boundsRadius, this.position);
+    //         this.velocity.x = Math.cos(bearing) * this.velocity.x;
+    //         this.velocity.y = Math.sin(bearing) * this.velocity.y;
+    //     };
+    // };
 
     //  Boids try to fly towards the centre of mass of neighbouring boids.
     private rule1 (): void {
@@ -73,7 +77,7 @@ class Boid {
             Flock.population.forEach( (boid: Boid) => {
                 if (this.id !== boid.id) {
                     const range = Distance.euclidean(this.position, boid.position);
-                    if (range > Boid.minRange) {
+                    if (range > Boid.flockRange) {
                         avg.x += this.position.x - boid.position.x;
                         avg.y += this.position.y - boid.position.y;
                     };
@@ -84,8 +88,9 @@ class Boid {
 
             const range = VectorMath.abs(avg) * -1;
             if (range !== 0) {
-                this.velocity.x = Math.min(this.velocity.x + (avg.x / range) * 0.15, Boid.maxVelocity);
-                this.velocity.y = Math.min(this.velocity.y + (avg.y / range) * 0.15, Boid.maxVelocity)
+                const newVelocity: Vector = {x: this.velocity.x + (avg.x / range) * 0.15, y:this.velocity.y + (avg.y / range) * 0.15 };
+                this.velocity.x = newVelocity.x < 0 ? Math.max(newVelocity.x, Boid.maxVelocity * -1) : Math.min(newVelocity.x, Boid.maxVelocity * -1);
+                this.velocity.y = newVelocity.y < 0 ? Math.max(newVelocity.y, Boid.maxVelocity * -1) : Math.min(newVelocity.y, Boid.maxVelocity * -1);
             }
         };
     };
@@ -97,18 +102,18 @@ class Boid {
         Flock.population.forEach( (boid: Boid) => {
             if (boid.id !== this.id) {
                 const range = Distance.euclidean(this.position, boid.position);
-                if (range < Boid.minRange) {
+                if (range < Boid.flockRange) {
                     neighbouringBoids++;
                     let dR: Vector = {x: this.position.x - boid.position.x, y: this.position.y - boid.position.y};
                     if (dR.x > 0) {
-                        dR.x = Math.sqrt(Boid.minRange) - dR.x
+                        dR.x = Math.sqrt(Boid.neighbouringRange) - dR.x
                     } else if (dR.x < 0) {
-                        dR.x = -Math.sqrt(Boid.minRange) - dR.x
+                        dR.x = -Math.sqrt(Boid.neighbouringRange) - dR.x
                     };
                     if (dR.y > 0) {
-                        dR.y = Math.sqrt(Boid.minRange) - dR.y
+                        dR.y = Math.sqrt(Boid.neighbouringRange) - dR.y
                     } else if (dR.y < 0) {
-                        dR.y = -Math.sqrt(Boid.minRange) - dR.y
+                        dR.y = -Math.sqrt(Boid.neighbouringRange) - dR.y
                     };
 
                     offestDistance.x += dR.x;
@@ -125,9 +130,23 @@ class Boid {
 
     // Boids try to match velocity with near boids.
     private rule3 (): void {
+        if (Flock.population.length > 1) {
+            let avgVel: Vector = {x:0, y:0};
+            Flock.population.forEach( (boid: Boid) => {
+                if (this.id !== boid.id) {
+                    if (Distance.euclidean(this.position, boid.position) > Boid.flockRange ) {
+                        avgVel = VectorMath.add(avgVel, boid.velocity);
+                    }
+                }
+            });
+            avgVel = VectorMath.divide(avgVel, Flock.population.length - 1);
 
-
-
+            if (VectorMath.abs(avgVel) > 0) {
+                const newVelocity = VectorMath.multiply(VectorMath.divide(avgVel, VectorMath.abs(avgVel)), 0.05);
+                this.velocity.x +=  newVelocity.x < 0 ? Math.max(newVelocity.x, Boid.maxVelocity * -1) :  Math.min(newVelocity.x, Boid.maxVelocity);
+                this.velocity.y += newVelocity.y < 0 ? Math.max(newVelocity.y, Boid.maxVelocity * -1) :  Math.min(newVelocity.y, Boid.maxVelocity);
+            }
+        }
     };
 
     // private findFlockCentroid (): Vector {

@@ -1,9 +1,12 @@
 import Boid from "./Boid";
 import Vector from "../Interface/Vector";
+import VectorMath from "../Util/VectorMath";
 
 abstract class Flock {
 
-    public static bounds: Vector = {x: 1000, y: 1000};
+    public static bounds: Vector = {x: 1500, y: 1500};
+
+    public static boundsRadius = VectorMath.divide(Flock.bounds, 2)
 
     public static population: Boid[] = [];
 
